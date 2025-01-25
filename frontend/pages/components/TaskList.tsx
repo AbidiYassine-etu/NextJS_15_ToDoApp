@@ -5,6 +5,10 @@ const TaskList = ({ userId }: { userId: number }) => {
   const [tasks, setTasks] = useState([]);
 
   const fetchTasks = async () => {
+    if(!userId){
+      console.error("userId is undefined or null");
+      return;  
+    }
     const { data } = await getTasks(userId);
     setTasks(data);
   };

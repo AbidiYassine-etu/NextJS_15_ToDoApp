@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import {jwtDecode} from 'jwt-decode'; // Correct import for jwt-decode
+import { jwtDecode } from 'jwt-decode';
 import TaskForm from './components/TaskForm';
 import TaskList from './components/TaskList';
 
 interface DecodedToken {
   userId: number;
-  exp: number; // Add expiration to your token interface if you want to check expiration
+  exp: number;
 }
 
 const Home = () => {
@@ -14,26 +14,33 @@ const Home = () => {
   const [userId, setUserId] = useState<number | null>(null);
   const router = useRouter();
 
+  // Logout function
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Remove the token
+    setIsAuthenticated(false); // Update authentication state
+    setUserId(null); // Clear userId
+    router.push('/auth/login'); // Redirect to login page
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
-    console.log(token);
     if (token) {
       try {
-        const decoded: DecodedToken = jwtDecode(token);
-        console.log(decoded); 
-        setUserId(decoded.sub);
-        // Check if the token has expired (if the 'exp' field is present)
+        const decoded: DecodedToken & { sub: number } = jwtDecode(token);
+        console.log(decoded);
+
+        // Check if the token has expired
         const currentTime = Math.floor(Date.now() / 1000);
         if (decoded.exp < currentTime) {
           console.error('Token expired');
-          router.push('/auth/login');
+          handleLogout(); // Call logout if the token is expired
         } else {
-          setUserId(decoded.userId);
+          setUserId(decoded.sub);
           setIsAuthenticated(true);
         }
       } catch (error) {
         console.error('Invalid token', error);
-        router.push('/auth/login');
+        handleLogout(); // Call logout if the token is invalid
       }
     } else {
       router.push('/auth/login');
@@ -46,9 +53,14 @@ const Home = () => {
 
   return (
     <div>
-      <h1>Your Tasks</h1>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>Your Tasks</h1>
+        <button onClick={handleLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}>
+          Logout
+        </button>
+      </header>
       <TaskForm userId={userId} /> {/* Pass userId to TaskForm */}
-      <TaskList userId={userId} /> {/* Pass userId to TaskList if needed */}
+      <TaskList userId={userId} /> {/* Pass userId to TaskList */}
     </div>
   );
 };
